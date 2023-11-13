@@ -43,10 +43,12 @@ i_stream_decompress_close(struct iostream_private *_stream, bool close_parent)
 	struct decompress_istream *zstream =
 		container_of(stream, struct decompress_istream, istream);
 
-	if (zstream->decompressed_input != NULL)
-		i_stream_close(zstream->decompressed_input);
-	if (close_parent)
-		i_stream_close(zstream->compressed_input);
+	if (close_parent) {
+		if (zstream->decompressed_input == NULL)
+			i_stream_close(zstream->compressed_input);
+		else
+			i_stream_close(zstream->decompressed_input);
+	}
 }
 
 static void
