@@ -934,7 +934,6 @@ static void test_gz_large_header_int(bool autodetect)
 
 		input = !autodetect ? gz->create_istream(file_input) :
 			i_stream_create_decompress(file_input, 0);
-		test_assert_idx(i_stream_read(input) == 0, i);
 		test_assert_idx(i_stream_read(input) == -1 &&
 				input->stream_errno == EINVAL, i);
 		i_stream_unref(&input);
