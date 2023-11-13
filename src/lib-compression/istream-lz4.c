@@ -43,17 +43,19 @@ static void lz4_read_error(struct lz4_istream *zstream, const char *error)
 
 static int i_stream_lz4_read_header(struct lz4_istream *zstream)
 {
+	struct istream_private *stream = &zstream->istream;
 	const struct iostream_lz4_header *hdr;
 	const unsigned char *data;
 	size_t size;
 	int ret;
 
-	ret = i_stream_read_bytes(zstream->istream.parent, &data,
-				  &size, sizeof(*hdr));
-	size = I_MIN(size, sizeof(*hdr));
+	i_assert(zstream->chunk_buf->used <= sizeof(*hdr));
+	size_t wanted = sizeof(*hdr) - zstream->chunk_buf->used;
+	ret = i_stream_read_bytes(stream->parent, &data, &size, wanted);
+	size = I_MIN(size, wanted);
 	buffer_append(zstream->chunk_buf, data, size);
 	i_stream_skip(zstream->istream.parent, size);
-	if (ret < 0 || (ret == 0 && zstream->istream.istream.eof)) {
+	if (ret < 0) {
 		i_assert(ret != -2);
 		if (zstream->istream.istream.stream_errno == 0) {
 			lz4_read_error(zstream, "missing header (not lz4 file?)");
@@ -97,8 +99,9 @@ static int i_stream_lz4_read_chunk_header(struct lz4_istream *zstream)
 	struct istream_private *stream = &zstream->istream;
 
 	i_assert(zstream->chunk_buf->used <= IOSTREAM_LZ4_CHUNK_PREFIX_LEN);
-	ret = i_stream_read_more(stream->parent, &data, &size);
-	size = I_MIN(size, IOSTREAM_LZ4_CHUNK_PREFIX_LEN - zstream->chunk_buf->used);
+	size_t wanted = IOSTREAM_LZ4_CHUNK_PREFIX_LEN - zstream->chunk_buf->used;
+	ret = i_stream_read_bytes(stream->parent, &data, &size, wanted);
+	size = I_MIN(size, wanted);
 	buffer_append(zstream->chunk_buf, data, size);
 	i_stream_skip(stream->parent, size);
 	if (ret < 0) {
@@ -143,10 +146,12 @@ static ssize_t i_stream_lz4_read(struct istream_private *stream)
 		return -2;
 
 	if (!zstream->header_read) {
-		if ((ret = i_stream_lz4_read_header(zstream)) <= 0) {
-			stream->istream.eof = TRUE;
-			return ret;
+		while ((ret = i_stream_lz4_read_header(zstream)) == 0) {
+			if (!stream->istream.blocking)
+				return 0;
 		}
+		if (ret < 0)
+			return ret;
 		zstream->header_read = TRUE;
 	}
 
