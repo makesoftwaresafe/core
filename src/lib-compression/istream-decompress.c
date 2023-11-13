@@ -76,7 +76,7 @@ i_stream_decompress_not_compressed(struct decompress_istream *zstream)
 	}
 }
 
-static int i_stream_decompress_detect(struct decompress_istream *zstream)
+static int i_stream_decompress_detect_more(struct decompress_istream *zstream)
 {
 	const struct compression_handler *handler;
 	ssize_t ret;
@@ -98,10 +98,9 @@ static int i_stream_decompress_detect(struct decompress_istream *zstream)
 		case 0:
 			return 0;
 		default:
-			if (!zstream->istream.istream.blocking)
-				return 0;
-			return i_stream_decompress_detect(zstream);
+			break;
 		}
+		return 1;
 	}
 	if (handler->create_istream == NULL) {
 		zstream->istream.istream.stream_errno = EINVAL;
@@ -112,6 +111,19 @@ static int i_stream_decompress_detect(struct decompress_istream *zstream)
 
 	zstream->decompressed_input =
 		handler->create_istream(zstream->compressed_input);
+	return 1;
+}
+
+static int i_stream_decompress_detect(struct decompress_istream *zstream)
+{
+	int ret;
+
+	do {
+		ret = i_stream_decompress_detect_more(zstream);
+		if (ret <= 0)
+			return ret;
+	} while (zstream->decompressed_input == NULL);
+
 	return 1;
 }
 
