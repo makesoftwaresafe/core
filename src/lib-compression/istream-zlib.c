@@ -40,7 +40,8 @@ static void i_stream_zlib_init(struct zlib_istream *zstream);
 static void i_stream_zlib_close(struct iostream_private *stream,
 				bool close_parent)
 {
-	struct zlib_istream *zstream = (struct zlib_istream *)stream;
+	struct zlib_istream *zstream =
+		container_of(stream, struct zlib_istream, istream.iostream);
 
 	if (!zstream->zs_closed) {
 		(void)inflateEnd(&zstream->zs);
@@ -160,7 +161,8 @@ static int i_stream_zlib_read_trailer(struct zlib_istream *zstream)
 
 static ssize_t i_stream_zlib_read(struct istream_private *stream)
 {
-	struct zlib_istream *zstream = (struct zlib_istream *)stream;
+	struct zlib_istream *zstream =
+		container_of(stream, struct zlib_istream, istream);
 	const unsigned char *data;
 	uoff_t high_offset;
 	size_t size, out_size;
@@ -362,7 +364,8 @@ static void i_stream_zlib_reset(struct zlib_istream *zstream)
 static void
 i_stream_zlib_seek(struct istream_private *stream, uoff_t v_offset, bool mark)
 {
-	struct zlib_istream *zstream = (struct zlib_istream *) stream;
+	struct zlib_istream *zstream =
+		container_of(stream, struct zlib_istream, istream);
 
 	if (i_stream_nonseekable_try_seek(stream, v_offset))
 		return;
@@ -378,7 +381,8 @@ i_stream_zlib_seek(struct istream_private *stream, uoff_t v_offset, bool mark)
 
 static void i_stream_zlib_sync(struct istream_private *stream)
 {
-	struct zlib_istream *zstream = (struct zlib_istream *) stream;
+	struct zlib_istream *zstream =
+		container_of(stream, struct zlib_istream, istream);
 	const struct stat *st;
 
 	if (i_stream_stat(stream->parent, FALSE, &st) == 0) {
