@@ -59,9 +59,9 @@ static void zlib_read_error(struct zlib_istream *zstream, const char *error)
 			    i_stream_get_absolute_offset(&zstream->istream.istream));
 }
 
-static int i_stream_zlib_read_header(struct istream_private *stream)
+static int i_stream_zlib_read_header(struct zlib_istream *zstream)
 {
-	struct zlib_istream *zstream = (struct zlib_istream *)stream;
+	struct istream_private *stream = &zstream->istream;
 	const unsigned char *data;
 	size_t size;
 	unsigned int pos, fextra_size;
@@ -225,7 +225,7 @@ static ssize_t i_stream_zlib_read(struct istream_private *stream)
 
 	if (!zstream->header_read) {
 		do {
-			ret = i_stream_zlib_read_header(stream);
+			ret = i_stream_zlib_read_header(zstream);
 		} while (ret == 0 && stream->istream.blocking);
 		if (ret <= 0)
 			return ret;
