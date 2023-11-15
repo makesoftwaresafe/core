@@ -164,7 +164,7 @@ static int mail_compress_istream_opened(struct mail *_mail, struct istream **str
 		return zmail->module_ctx.super.istream_opened(_mail, stream);
 	}
 
-	handler = compression_detect_handler(*stream);
+	compression_detect_handler(*stream, &handler);
 	if (handler != NULL) {
 		if (handler->create_istream == NULL) {
 			mail_set_critical(_mail,
@@ -238,7 +238,10 @@ static int mail_compress_mail_save_finish(struct mail_save_context *ctx)
 	if (ret < 0)
 		return -1;
 
-	if (compression_detect_handler(input) != NULL) {
+	const struct compression_handler *handler;
+
+	compression_detect_handler(input, &handler);
+	if (handler != NULL) {
 		mail_storage_set_error(box->storage, MAIL_ERROR_NOTPOSSIBLE,
 			"Saving mails compressed by client isn't supported");
 		return -1;

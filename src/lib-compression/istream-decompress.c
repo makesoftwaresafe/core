@@ -83,8 +83,7 @@ static int i_stream_decompress_detect_more(struct decompress_istream *zstream)
 	const struct compression_handler *handler;
 	ssize_t ret;
 
-	ret = i_stream_read(zstream->compressed_input);
-	handler = compression_detect_handler(zstream->compressed_input);
+	ret = compression_detect_handler(zstream->compressed_input, &handler);
 	if (handler == NULL) {
 		switch (ret) {
 		case -1:

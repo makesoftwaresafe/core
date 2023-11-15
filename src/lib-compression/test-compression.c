@@ -48,7 +48,7 @@ static void test_compression_handler_detect(const struct compression_handler *ha
 	o_stream_unref(&output);
 
 	test_input = test_istream_create_data(buffer->data, buffer->used);
-	handler = compression_detect_handler(test_input);
+	compression_detect_handler(test_input, &handler);
 	i_stream_seek(test_input, 0);
 	test_assert(handler != NULL);
 	if (handler != NULL) {
