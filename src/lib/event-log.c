@@ -457,11 +457,6 @@ void event_set_global_debug_send_filter(struct event_filter *filter)
 	event_filter_replace_counter++;
 }
 
-struct event_filter *event_get_global_debug_send_filter(void)
-{
-	return global_debug_send_filter;
-}
-
 void event_unset_global_debug_send_filter(void)
 {
 	event_filter_unref(&global_debug_send_filter);

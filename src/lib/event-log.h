@@ -123,8 +123,6 @@ void event_unset_global_debug_log_filter(void);
 /* Set the global filter to sending debug events. The debug events are also
    sent if they match the global debug log filter. */
 void event_set_global_debug_send_filter(struct event_filter *filter);
-/* Return the current global debug send event filter. */
-struct event_filter *event_get_global_debug_send_filter(void);
 /* Unset global debug send filter, if one exists. */
 void event_unset_global_debug_send_filter(void);
 
