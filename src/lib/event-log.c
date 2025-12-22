@@ -1,6 +1,7 @@
 /* Copyright (c) 2017-2018 Dovecot authors, see the included COPYING file */
 
 #include "lib.h"
+#include "array.h"
 #include "str.h"
 #include "event-filter.h"
 #include "lib-event-private.h"
@@ -8,8 +9,8 @@
 unsigned int event_filter_replace_counter = 1;
 
 static struct event_filter *global_debug_log_filter = NULL;
-static struct event_filter *global_debug_send_filter = NULL;
 static struct event_filter *global_core_log_filter = NULL;
+static ARRAY(struct event_filter *) global_debug_send_filters;
 
 #undef e_error
 void e_error(struct event *event,
@@ -319,10 +320,12 @@ bool event_want_level(struct event *event, enum log_type level,
 		return TRUE;
 
 	/* see if debug send filtering matches */
-	if (global_debug_send_filter != NULL) {
+	struct event_filter *filter;
+	array_foreach_elem(&global_debug_send_filters, filter) {
 		struct failure_context ctx = { .type = LOG_TYPE_DEBUG };
 
-		if (event_filter_match_source(global_debug_send_filter, event,
+		if (filter != NULL &&
+		    event_filter_match_source(filter, event,
 					      source_filename, source_linenum,
 					      &ctx))
 			return TRUE;
@@ -449,17 +452,13 @@ void event_unset_global_debug_log_filter(void)
 	event_filter_replace_counter++;
 }
 
-void event_set_global_debug_send_filter(struct event_filter *filter)
+struct event_filter **event_global_debug_send_filter_register(void)
 {
-	event_unset_global_debug_send_filter();
-	global_debug_send_filter = filter;
-	event_filter_ref(global_debug_send_filter);
-	event_filter_replace_counter++;
+	return array_append_space(&global_debug_send_filters);
 }
 
-void event_unset_global_debug_send_filter(void)
+void event_global_debug_send_filter_updated(void)
 {
-	event_filter_unref(&global_debug_send_filter);
 	event_filter_replace_counter++;
 }
 
@@ -480,4 +479,17 @@ void event_unset_global_core_log_filter(void)
 {
 	event_filter_unref(&global_core_log_filter);
 	event_filter_replace_counter++;
+}
+
+void event_log_init(void)
+{
+	i_array_init(&global_debug_send_filters, 2);
+}
+
+void event_log_deinit(void)
+{
+	struct event_filter *filter;
+	array_foreach_elem(&global_debug_send_filters, filter)
+		event_filter_unref(&filter);
+	array_free(&global_debug_send_filters);
 }

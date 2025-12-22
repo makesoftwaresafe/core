@@ -1901,6 +1901,7 @@ void lib_event_init(void)
 	i_array_init(&event_registered_categories, 32);
 #endif
 	i_array_init(&event_registered_categories_representative, 16);
+	event_log_init();
 }
 
 void lib_event_deinit(void)
@@ -1910,8 +1911,8 @@ void lib_event_deinit(void)
 	struct event_category *category;
 #endif
 
+	event_log_deinit();
 	event_unset_global_debug_log_filter();
-	event_unset_global_debug_send_filter();
 	event_unset_global_core_log_filter();
 	for (struct event *event = events; event != NULL; event = event->next) {
 		i_warning("Event %p leaked (parent=%p): %s:%u",
