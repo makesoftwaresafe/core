@@ -683,7 +683,7 @@ fts_build_mail_real(struct fts_backend_update_context *update_ctx,
 		/* If the block size exceeds limit, we truncate the block
 		   which would have exceeded to final size, and parse it.
 		   Then we ignore the rest body parts. */
-		if (body_part && orig_fts_message_max_size > 0) {
+		if (body_part && orig_fts_message_max_size != SET_SIZE_UNLIMITED) {
 			if (fts_message_max_size > block.size) {
 				fts_message_max_size -= block.size;
 			} else if (fts_message_max_size == 0) {

@@ -156,6 +156,10 @@ static bool fts_settings_check(void *_set, pool_t pool ATTR_UNUSED,
 		*error_r = "fts_search_timeout must not be 0";
 		return FALSE;
 	}
+	if (set->message_max_size == 0) {
+		*error_r = "message_max_size must not be 0";
+		return FALSE;
+	}
 	set->parsed_search_add_missing_body_only =
 		strcmp(set->search_add_missing,
 		       FTS_SEARCH_ADD_MISSING_BODY_SEARCH_ONLY) == 0;
