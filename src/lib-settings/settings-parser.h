@@ -2,6 +2,7 @@
 #define SETTINGS_PARSER_H
 
 #include "str-parse.h"
+#include "settings-consts.h"
 
 struct stat;
 struct var_expand_table;
@@ -11,16 +12,6 @@ struct var_expand_provider;
 #define SETTINGS_SEPARATOR_S "/"
 
 #define SETTINGS_FILTER_ARRAY_SEPARATORS ",\t "
-
-/* These values are shown as "unlimited" */
-#define SET_VALUE_UNLIMITED "unlimited"
-#define SET_UINT_UNLIMITED UINT_MAX
-#define SET_SIZE_UNLIMITED UOFF_T_MAX
-
-/* These values are shown as "infinite" */
-#define SET_VALUE_INFINITE "infinite"
-#define SET_TIME_INFINITE UINT_MAX
-#define SET_TIME_MSECS_INFINITE UINT_MAX
 
 #define SET_LIST_APPEND "+"
 #define SET_LIST_REPLACE "$"

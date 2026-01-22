@@ -16,7 +16,8 @@ libsettings_la_SOURCES = \
 headers = \
 	settings.h \
 	settings-history.h \
-	settings-parser.h
+	settings-parser.h \
+	settings-consts.h
 
 pkginc_libdir=$(pkgincludedir)
 pkginc_lib_HEADERS = $(headers)
