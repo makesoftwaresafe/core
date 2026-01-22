@@ -145,7 +145,7 @@ const struct mail_storage_settings mail_storage_default_settings = {
 	.mail_max_lock_timeout = 0,
 	.mail_temp_scan_interval = 7*24*60*60,
 	.mail_vsize_bg_after_count = 0,
-	.mail_sort_max_read_count = 0,
+	.mail_sort_max_read_count = SET_UINT_UNLIMITED,
 	.mail_save_crlf = FALSE,
 	.mail_fsync = "optimized:never:always",
 	.mmap_disable = FALSE,
@@ -621,6 +621,10 @@ mail_storage_settings_ext_check(struct event *event, void *_set, pool_t pool,
 
 	if (set->mailbox_idle_check_interval == 0) {
 		*error_r = "mailbox_idle_check_interval must not be 0";
+		return FALSE;
+	}
+	if (set->mail_sort_max_read_count == 0) {
+		*error_r = "mail_sort_max_read_count must not be 0";
 		return FALSE;
 	}
 
