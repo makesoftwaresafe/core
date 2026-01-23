@@ -3879,6 +3879,7 @@ static void test_server_defaults(struct smtp_server_settings *smtp_set)
 	smtp_set->max_pipelined_commands = 1;
 	smtp_set->auth_optional = TRUE;
 	smtp_set->debug = debug;
+	smtp_set->max_recipients = SET_UINT_UNLIMITED;
 }
 
 static void

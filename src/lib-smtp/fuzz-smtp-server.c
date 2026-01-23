@@ -5,6 +5,7 @@
 #include "istream.h"
 #include "ioloop.h"
 #include "smtp-server.h"
+#include "settings-consts.h"
 
 static struct {
 	struct istream *data_input;
@@ -76,6 +77,7 @@ FUZZ_BEGIN_FD
 		.max_client_idle_time_msecs = 500,
 		.max_pipelined_commands = 16,
 		.auth_optional = TRUE,
+		.max_recipients = SET_UINT_UNLIMITED,
 	};
 	struct smtp_server_callbacks server_callbacks = {
 		.conn_cmd_rcpt = server_cmd_rcpt,

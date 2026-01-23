@@ -138,6 +138,7 @@ static int submission_client_create(struct client *client)
 	smtp_set.command_limits.max_auth_size = LOGIN_MAX_AUTH_BUF_SIZE;
 	smtp_set.debug = event_want_debug(client->event);
 	smtp_set.event_parent = client->event;
+	smtp_set.max_recipients = SET_UINT_UNLIMITED;
 
 	subm_client->conn = smtp_server_connection_create_from_streams(
 		smtp_server, client->input, client->output,
@@ -312,6 +313,7 @@ static void submission_login_init(void)
 	/* Pre-auth state is always logged either as GREETING or READY.
 	   It's not very useful. */
 	smtp_server_set.no_state_in_reason = TRUE;
+	smtp_server_set.max_recipients = SET_UINT_UNLIMITED;
 	smtp_server = smtp_server_init(&smtp_server_set);
 	smtp_server_command_override(smtp_server, "MAIL", cmd_mail,
 				     SMTP_SERVER_CMD_FLAG_PREAUTH);

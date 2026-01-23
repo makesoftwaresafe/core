@@ -1340,6 +1340,7 @@ test_run_scenarios(
 	smtp_server_set.auth_optional = (tset.sasl_mech == NULL);
 	smtp_server_set.ssl = &ssl_server_set;
 	smtp_server_set.debug = debug;
+	smtp_server_set.max_recipients = SET_UINT_UNLIMITED;
 
 	/* client settings */
 	i_zero(&smtp_client_set);

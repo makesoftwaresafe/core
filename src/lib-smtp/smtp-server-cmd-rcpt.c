@@ -9,6 +9,7 @@
 #include "smtp-syntax.h"
 
 #include "smtp-server-private.h"
+#include "settings-consts.h"
 
 /* RCPT command */
 
@@ -41,8 +42,10 @@ cmd_rcpt_check_state(struct smtp_server_cmd_ctx *cmd, bool next_to_reply)
 			503, "5.5.0", "MAIL needed first");
 		return FALSE;
 	}
-	if (conn->set.max_recipients > 0 && trans != NULL &&
-		smtp_server_transaction_rcpt_count(trans) >=
+	i_assert(conn->set.max_recipients != 0);
+	if (conn->set.max_recipients != SET_UINT_UNLIMITED &&
+	    trans != NULL &&
+	    smtp_server_transaction_rcpt_count(trans) >=
 			conn->set.max_recipients) {
 		smtp_server_reply(cmd,
 			451, "4.5.3", "Too many recipients");

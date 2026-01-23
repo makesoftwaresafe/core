@@ -201,6 +201,7 @@ struct client *client_create(int fd_in, int fd_out,
 	lmtp_set.max_pipelined_commands = 5;
 	lmtp_set.rawlog_dir = client->lmtp_set->lmtp_rawlog_dir;
 	lmtp_set.event_parent = client->event;
+	lmtp_set.max_recipients = SET_UINT_UNLIMITED;
 
 	workarounds = client->lmtp_set->parsed_workarounds;
 	if ((workarounds & LMTP_WORKAROUND_WHITESPACE_BEFORE_PATH) != 0) {

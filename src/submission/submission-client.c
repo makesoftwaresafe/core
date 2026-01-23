@@ -221,6 +221,7 @@ client_create(int fd_in, int fd_out, struct event *event,
 	smtp_set.no_greeting = no_greeting;
 	smtp_set.debug = event_want_debug(client->event);
 	smtp_set.event_parent = event;
+	smtp_set.max_recipients = SET_UINT_UNLIMITED;
 
 	if ((workarounds & SUBMISSION_WORKAROUND_WHITESPACE_BEFORE_PATH) != 0) {
 		smtp_set.workarounds |=
