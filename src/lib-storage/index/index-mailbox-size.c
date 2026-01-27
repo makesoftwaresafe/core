@@ -323,8 +323,6 @@ index_mailbox_vsize_hdr_add_missing(struct mailbox_vsize_update *update,
 					 MAIL_FETCH_VIRTUAL_SIZE, NULL);
 	if (!require_result)
 		mails_left = 0;
-	else if (update->box->storage->set->mail_vsize_bg_after_count == 0)
-		mails_left = UINT_MAX;
 	else
 		mails_left = update->box->storage->set->mail_vsize_bg_after_count;
 
