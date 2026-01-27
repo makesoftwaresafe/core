@@ -294,7 +294,6 @@ int quota_init(struct mail_user *user, struct quota **quota_r,
 			if (ret < 0) {
 				*error_r = t_strdup_printf("Quota root %s: %s",
 							   root_name, error);
-				settings_free(set);
 				quota_deinit(&quota);
 				return -1;
 			}
