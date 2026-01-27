@@ -433,9 +433,9 @@ static const struct mail_user_settings mail_user_default_settings = {
 	.valid_chroot_dirs = ARRAY_INIT,
 
 	.first_valid_uid = 500,
-	.last_valid_uid = 0,
+	.last_valid_uid = SET_UINT_UNLIMITED,
 	.first_valid_gid = 1,
-	.last_valid_gid = 0,
+	.last_valid_gid = SET_UINT_UNLIMITED,
 
 	.mail_plugins = ARRAY_INIT,
 	.mail_plugin_dir = MODULEDIR,
@@ -1011,6 +1011,14 @@ static bool mail_user_settings_check(void *_set, pool_t pool ATTR_UNUSED,
 	(void)parse_postmaster_address(set->postmaster_address, pool,
 				       set, &error);
 #else
+	if (set->last_valid_uid == 0) {
+		*error_r = "last_valid_uid must not be 0";
+		return FALSE;
+	}
+	if (set->last_valid_gid == 0) {
+		*error_r = "last_valid_gid must not be 0";
+		return FALSE;
+	}
 	if (array_is_created(&set->mail_plugins) &&
 	    array_not_empty(&set->mail_plugins) &&
 	    faccessat(AT_FDCWD, set->mail_plugin_dir, R_OK | X_OK, AT_EACCESS) < 0) {

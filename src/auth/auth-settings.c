@@ -406,9 +406,9 @@ static const struct auth_settings auth_default_settings = {
 	.base_dir = PKG_RUNDIR,
 	.verbose_proctitle = VERBOSE_PROCTITLE_DEFAULT,
 	.first_valid_uid = 500,
-	.last_valid_uid = 0,
+	.last_valid_uid = SET_UINT_UNLIMITED,
 	.first_valid_gid = 1,
-	.last_valid_gid = 0,
+	.last_valid_gid = SET_UINT_UNLIMITED,
 };
 static const struct setting_keyvalue auth_default_settings_keyvalue[] = {
 	{ "auth_mechanisms", "plain" },
@@ -594,6 +594,15 @@ static bool auth_settings_ext_check(struct event *event, void *_set,
 		set->debug = TRUE;
 	if (set->debug)
 		set->verbose = TRUE;
+
+	if (set->last_valid_uid == 0) {
+		*error_r = "last_valid_uid must not be 0";
+		return FALSE;
+	}
+	if (set->last_valid_gid == 0) {
+		*error_r = "last_valid_gid must not be 0";
+		return FALSE;
+	}
 
 	if (set->cache_size > 0 && set->cache_size < 1024) {
 		/* probably a configuration error.

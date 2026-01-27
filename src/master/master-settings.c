@@ -236,9 +236,9 @@ static const struct master_settings master_default_settings = {
 	.version_ignore = FALSE,
 
 	.first_valid_uid = 500,
-	.last_valid_uid = 0,
+	.last_valid_uid = SET_UINT_UNLIMITED,
 	.first_valid_gid = 1,
-	.last_valid_gid = 0,
+	.last_valid_gid = SET_UINT_UNLIMITED,
 
 	.services = ARRAY_INIT
 };
@@ -627,13 +627,19 @@ master_settings_ext_check(struct event *event, void *_set,
 		set->base_dir = p_strndup(pool, set->base_dir, len - 1);
 	}
 
-	if (set->last_valid_uid != 0 &&
-	    set->first_valid_uid > set->last_valid_uid) {
+	if (set->last_valid_uid == 0) {
+		*error_r = "last_valid_uid must not be 0";
+		return FALSE;
+	}
+	if (set->first_valid_uid > set->last_valid_uid) {
 		*error_r = "first_valid_uid can't be larger than last_valid_uid";
 		return FALSE;
 	}
-	if (set->last_valid_gid != 0 &&
-	    set->first_valid_gid > set->last_valid_gid) {
+	if (set->last_valid_gid == 0) {
+		*error_r = "last_valid_gid must not be 0";
+		return FALSE;
+	}
+	if (set->first_valid_gid > set->last_valid_gid) {
 		*error_r = "first_valid_gid can't be larger than last_valid_gid";
 		return FALSE;
 	}
