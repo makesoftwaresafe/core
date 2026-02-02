@@ -639,6 +639,13 @@ mail_storage_settings_ext_check(struct event *event, void *_set, pool_t pool,
 	if (set->mail_cache_max_header_name_length == SET_UINT_UNLIMITED)
 		set->mail_cache_max_header_name_length = 0;
 
+	if (set->mail_cache_max_headers_count == 0) {
+		*error_r = "mail_cache_max_headers_count must not be 0";
+		return FALSE;
+	}
+	if (set->mail_cache_max_headers_count == SET_UINT_UNLIMITED)
+		set->mail_cache_max_headers_count = 0;
+
 	if (strcmp(set->mail_fsync, "optimized") == 0)
 		set->parsed_fsync_mode = FSYNC_MODE_OPTIMIZED;
 	else if (strcmp(set->mail_fsync, "never") == 0)
