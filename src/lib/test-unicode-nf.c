@@ -444,6 +444,10 @@ static void test_stream_safe(void)
 	   this situation.
 	 */
 
+	/*
+	 * No decomposition (umlaut, U+0308)
+	 */
+
 	/* Construct test string */
 
 	string_t *in = t_str_new(1024);
@@ -494,6 +498,63 @@ static void test_stream_safe(void)
 	test_assert_memcmp(&nf_data[187], 2, "\xCC\xA3", 2);    /* dot-below */
 	test_assert_memcmp(&nf_data[189], 20, last_block1, 20); /* 10 umlauts */
 	test_assert(nf_data[209] == '3');                       /* digit 3 */
+
+	/*
+	 * Decomposing nonstarter (Combining Greek Dialytika Tonos, U+0344)
+	 */
+
+	str_truncate(in, 0);
+	buffer_clear(nf_out);
+
+	/* digit 2 */
+	str_append(in, "2");
+	/* not quite 10,000 umlauts (in this case special umlauts) */
+	for  (i = 0; i < 100; i++)
+		str_append(in, "\xCD\x84");
+	/* dot-below */
+	str_append(in, "\xCC\xA3");
+	/* digit 3 */
+	str_append(in, "3");
+
+	/* Apply NFD normalization */
+
+	ret = uni_utf8_write_nfd(str_data(in), str_len(in), nf_out);
+	test_assert(ret == 0);
+
+	/* Check the result */
+
+	nf_data = nf_out->data;
+	nf_size = nf_out->used;
+
+	test_assert(nf_size == (1 + (60 + 2) * 6 + 2 + 40 + 1));
+
+	static const char safe_block2[] =
+		"\xCC\x88\xCC\x81\xCC\x88\xCC\x81\xCC\x88\xCC\x81\xCC\x88"
+		"\xCC\x81\xCC\x88\xCC\x81\xCC\x88\xCC\x81\xCC\x88\xCC\x81"
+		"\xCC\x88\xCC\x81\xCC\x88\xCC\x81\xCC\x88\xCC\x81\xCC\x88"
+		"\xCC\x81\xCC\x88\xCC\x81\xCC\x88\xCC\x81\xCC\x88\xCC\x81"
+		"\xCC\x88\xCC\x81";
+	static const char last_block2[] =
+		"\xCC\x88\xCC\x81\xCC\x88\xCC\x81\xCC\x88\xCC\x81\xCC\x88"
+		"\xCC\x81\xCC\x88\xCC\x81\xCC\x88\xCC\x81\xCC\x88\xCC\x81"
+		"\xCC\x88\xCC\x81\xCC\x88\xCC\x81\xCC\x88\xCC\x81";
+
+	test_assert(nf_data[0] == '2');                         /* digit 2 */
+	test_assert_memcmp(&nf_data[1], 60, safe_block2, 60);   /* 15 umlauts */
+	test_assert_memcmp(&nf_data[61], 2, "\xCD\x8F", 2);     /* CGJ */
+	test_assert_memcmp(&nf_data[63], 60, safe_block2, 60);  /* 15 umlauts */
+	test_assert_memcmp(&nf_data[123], 2, "\xCD\x8F", 2);    /* CGJ */
+	test_assert_memcmp(&nf_data[125], 60, safe_block2, 60); /* 15 umlauts */
+	test_assert_memcmp(&nf_data[185], 2, "\xCD\x8F", 2);    /* CGJ */
+	test_assert_memcmp(&nf_data[187], 60, safe_block2, 60); /* 15 umlauts */
+	test_assert_memcmp(&nf_data[247], 2, "\xCD\x8F", 2);    /* CGJ */
+	test_assert_memcmp(&nf_data[249], 60, safe_block2, 60); /* 15 umlauts */
+	test_assert_memcmp(&nf_data[309], 2, "\xCD\x8F", 2);    /* CGJ */
+	test_assert_memcmp(&nf_data[311], 60, safe_block2, 60); /* 15 umlauts */
+	test_assert_memcmp(&nf_data[371], 2, "\xCD\x8F", 2);    /* CGJ */
+	test_assert_memcmp(&nf_data[373], 2, "\xCC\xA3", 2);    /* dot-below */
+	test_assert_memcmp(&nf_data[375], 40, last_block2, 40); /* 10 umlauts */
+	test_assert(nf_data[415] == '3');                       /* digit 3 */
 }
 
 void test_unicode_nf(void)

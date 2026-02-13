@@ -365,7 +365,7 @@ unicode_nf_buffer_swap(struct unicode_nf_context *ctx,
 	ctx->cpd_buffer[idx1] = tmp_cpd;
 }
 
-static void
+static bool
 unicode_nf_cp(struct unicode_nf_context *ctx, uint32_t cp,
 	      const struct unicode_code_point_data *cpd)
 {
@@ -410,15 +410,17 @@ unicode_nf_cp(struct unicode_nf_context *ctx, uint32_t cp,
 	i_assert(len <= UNICODE_DECOMPOSITION_MAX_LENGTH);
 	i_assert(len_k <= UNICODE_DECOMPOSITION_MAX_LENGTH);
 
-	if ((ctx->buffer_len + len) > buffer_size) {
+	if ((ctx->buffer_len + len) > buffer_size &&
+	    (ctx->nonstarter_count + len) <=
+		UNICODE_NF_STREAM_SAFE_NON_STARTER_LEN) {
 		/* Decomposition overflows the buffer. Record and mark it as
 		   pending and come back to it once the buffer is sufficiently
 		   drained. */
-		i_assert(ctx->pending_decomp == 0);
+		i_assert(ctx->pending_decomp == 0 || ctx->pending_cp == cp);
 		ctx->pending_decomp = len;
 		ctx->pending_cp = cp;
 		ctx->pending_cpd = cpd;
-		return;
+		return FALSE;
 	}
 
 	/* UAX15-D4: Stream-Safe Text Process is the process of producing a
@@ -482,29 +484,33 @@ unicode_nf_cp(struct unicode_nf_context *ctx, uint32_t cp,
 
 	ctx->nonstarter_count += ns_lead;
 	if (ctx->nonstarter_count > UNICODE_NF_STREAM_SAFE_NON_STARTER_LEN) {
-		ctx->nonstarter_count = ns_trail;
-
+		ctx->nonstarter_count = 0;
 		/* Write U+034F COMBINING GRAPHEME JOINER (CGJ)
 		 */
 		ctx->cp_buffer[ctx->buffer_len] = 0x034F;
 		ctx->cpd_buffer[ctx->buffer_len] =
 			unicode_code_point_get_data(0x034F);
 		ctx->buffer_len++;
+	} else if (seen_starter) {
+		ctx->nonstarter_count = ns_trail;
 	}
 
 	/*
 	 * Buffer the requested decomposition for COA sorting
 	 */
 
+	bool pending_decomp = FALSE;
+
 	i_assert(ctx->buffer_len <= buffer_size);
 	if ((ctx->buffer_len + len) > buffer_size) {
 		/* Decomposition now overflows the buffer. Record and mark it as
 		   pending and come back to it once the buffer is sufficiently
 		   drained. */
-		i_assert(ctx->pending_decomp == 0);
+		i_assert(ctx->pending_decomp == 0 || ctx->pending_cp == cp);
 		ctx->pending_decomp = len;
 		ctx->pending_cp = cp;
 		ctx->pending_cpd = cpd;
+		pending_decomp = TRUE;
 	} else {
 		for (i = 0; i < len; i++) {
 			ctx->cp_buffer[ctx->buffer_len] = decomp[i];
@@ -547,6 +553,7 @@ unicode_nf_cp(struct unicode_nf_context *ctx, uint32_t cp,
 		}
 	}
 	ctx->buffer_output_max = I_MIN(last_qc_y, last_starter);
+	return !pending_decomp;
 }
 
 static bool
@@ -567,7 +574,8 @@ unicode_nf_input_cp(struct unicode_nf_context *ctx, uint32_t cp,
 		/* Earlier, the buffer was too full for the next decomposition
 		   and it was recorded and marked as pending. Now, we have the
 		   opportunity to continue. */
-		unicode_nf_cp(ctx, ctx->pending_cp, ctx->pending_cpd);
+		if (!unicode_nf_cp(ctx, ctx->pending_cp, ctx->pending_cpd))
+			return FALSE;
 		ctx->pending_decomp = 0;
 
 		i_assert(ctx->buffer_len <= buffer_size);
@@ -580,7 +588,7 @@ unicode_nf_input_cp(struct unicode_nf_context *ctx, uint32_t cp,
 	}
 
 	/* Normal input of next code point */
-	unicode_nf_cp(ctx, cp, cpd);
+	(void)unicode_nf_cp(ctx, cp, cpd);
 	return TRUE;
 }
 
@@ -721,8 +729,8 @@ unicode_nf_flush(struct unicode_transform *trans, bool finished,
 		return ret;
 
 	if (finished && ctx->pending_decomp > 0) {
-		unicode_nf_cp(ctx, ctx->pending_cp, ctx->pending_cpd);
-		ctx->pending_decomp = 0;
+		if (unicode_nf_cp(ctx, ctx->pending_cp, ctx->pending_cpd))
+			ctx->pending_decomp = 0;
 	}
 
 	return unicode_nf_flush_more(ctx, finished, error_r);
