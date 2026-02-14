@@ -448,7 +448,7 @@ static void test_stream_safe(void)
 
 	string_t *in = t_str_new(1024);
 	buffer_t *nf_out = t_buffer_create(1024);
-	unsigned int i = 0;
+	unsigned int i;
 
 	/* digit 2 */
 	str_append(in, "2");
@@ -474,26 +474,26 @@ static void test_stream_safe(void)
 
 	test_assert(nf_size == (1 + (60 + 2) * 3 + 2 + 20 + 1));
 
-	static const char safe_block[] =
+	static const char safe_block1[] =
 		"\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88"
 		"\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88"
 		"\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88"
 		"\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88"
 		"\xCC\x88\xCC\x88";
-	static const char last_block[] =
+	static const char last_block1[] =
 		"\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88"
 		"\xCC\x88\xCC\x88\xCC\x88";
 
-	test_assert(nf_data[0] == '2');                    /* digit 2 */
-	test_assert_memcmp(&nf_data[1], 60, safe_block, 60);   /* 30 umlauts */
-	test_assert_memcmp(&nf_data[61], 2, "\xCD\x8F", 2);   /* CGJ */
-	test_assert_memcmp(&nf_data[63], 60, safe_block, 60);  /* 30 umlauts */
-	test_assert_memcmp(&nf_data[123], 2, "\xCD\x8F", 2);  /* CGJ */
-	test_assert_memcmp(&nf_data[125], 60, safe_block, 60); /* 30 umlauts */
-	test_assert_memcmp(&nf_data[185], 2, "\xCD\x8F", 2);  /* CGJ */
-	test_assert_memcmp(&nf_data[187], 2, "\xCC\xA3", 2);  /* dot-below */
-	test_assert_memcmp(&nf_data[189], 20, last_block, 20); /* 10 umlauts */
-	test_assert(nf_data[209] == '3');                  /* digit 3 */
+	test_assert(nf_data[0] == '2');                         /* digit 2 */
+	test_assert_memcmp(&nf_data[1], 60, safe_block1, 60);   /* 30 umlauts */
+	test_assert_memcmp(&nf_data[61], 2, "\xCD\x8F", 2);     /* CGJ */
+	test_assert_memcmp(&nf_data[63], 60, safe_block1, 60);  /* 30 umlauts */
+	test_assert_memcmp(&nf_data[123], 2, "\xCD\x8F", 2);    /* CGJ */
+	test_assert_memcmp(&nf_data[125], 60, safe_block1, 60); /* 30 umlauts */
+	test_assert_memcmp(&nf_data[185], 2, "\xCD\x8F", 2);    /* CGJ */
+	test_assert_memcmp(&nf_data[187], 2, "\xCC\xA3", 2);    /* dot-below */
+	test_assert_memcmp(&nf_data[189], 20, last_block1, 20); /* 10 umlauts */
+	test_assert(nf_data[209] == '3');                       /* digit 3 */
 }
 
 void test_unicode_nf(void)
