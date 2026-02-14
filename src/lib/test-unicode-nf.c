@@ -472,7 +472,7 @@ static void test_stream_safe(void)
 	const unsigned char *nf_data = nf_out->data;
 	size_t nf_size = nf_out->used;
 
-	test_assert(nf_size > 32);
+	test_assert(nf_size == (1 + (60 + 2) * 3 + 2 + 20 + 1));
 
 	static const char safe_block[] =
 		"\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88\xCC\x88"
