@@ -481,7 +481,7 @@ unicode_nf_cp(struct unicode_nf_context *ctx, uint32_t cp,
 	}
 
 	ctx->nonstarter_count += ns_lead;
-	if (ctx->nonstarter_count > 30) {
+	if (ctx->nonstarter_count > UNICODE_NF_STREAM_SAFE_NON_STARTER_LEN) {
 		ctx->nonstarter_count = ns_trail;
 
 		/* Write U+034F COMBINING GRAPHEME JOINER (CGJ)
