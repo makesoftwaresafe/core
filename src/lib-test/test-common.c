@@ -118,7 +118,8 @@ void test_assert_failed_memcmp_idx(const char *code, const char *file, unsigned 
 		printf("(#%lld) failed: %s\n", i, code);
 	printf("        \"");
 	print_memcmp_data(src, len);
-	printf("\" != \"");
+	printf("\" != \n");
+	printf("        \"");
 	print_memcmp_data(dst, len);
 	printf("\" (len == %zu)\n", len);
 	fflush(stdout);
