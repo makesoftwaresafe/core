@@ -4,6 +4,9 @@
 #include "seq-range-array.h"
 #include "time-util.h"
 #include "imap-commands.h"
+#include "imap-quote.h"
+#include "imap-list.h"
+#include "str.h"
 #include "mail-search-build.h"
 #include "imap-search-args.h"
 #include "imap-seqset.h"
@@ -271,6 +274,38 @@ static int select_qresync(struct imap_select_context *ctx)
 	return ret < 0 ? -1 : 1;
 }
 
+static int select_send_untagged_list(struct client *client, struct mailbox *box,
+				     const char *old_vname)
+{
+	enum mailbox_info_flags mailbox_flags;
+	if (mailbox_list_mailbox(mailbox_get_namespace(box)->list,
+				 mailbox_get_name(box), &mailbox_flags) < 0)
+		return -1;
+
+	string_t *str = t_str_new(128);
+	str_append(str, "* LIST (");
+	imap_mailbox_flags2str(str, mailbox_flags);
+	str_append(str, ") \"");
+
+	char ns_sep = mail_namespace_get_sep(mailbox_get_namespace(box));
+	if (ns_sep == '\\')
+		str_append_c(str, '\\');
+	str_append_c(str, ns_sep);
+	str_append(str, "\" ");
+
+	const char *vname = mailbox_get_vname(box);
+	imap_append_astring(str, vname, IMAP_QUOTE_FLAG_UTF8);
+
+	if (old_vname != NULL) {
+		str_append(str, " (\"OLDNAME\" (");
+		imap_append_astring(str, old_vname, IMAP_QUOTE_FLAG_UTF8);
+		str_append(str, "))");
+	}
+
+	client_send_line(client, str_c(str));
+	return 0;
+}
+
 static int
 select_open(struct imap_select_context *ctx, const char *mailbox, bool readonly)
 {
@@ -284,6 +319,21 @@ select_open(struct imap_select_context *ctx, const char *mailbox, bool readonly)
 	else
 		flags |= MAILBOX_FLAG_DROP_RECENT;
 	ctx->box = mailbox_alloc(ctx->ns->list, mailbox, flags);
+
+	bool imap4rev2_enabled = (client_enabled_mailbox_features(client) &
+				  MAILBOX_FEATURE_IMAP4REV2) != 0;
+
+	const char *old_vname = NULL;
+	if (imap4rev2_enabled &&
+	    mailbox_was_vname_changed_by_nfc(ctx->box, &old_vname)) {
+		/* suppress untagged LIST from lower layers, as we are
+		   expected to respond based on the discrepancy between
+		   the one in the command and the actual, not between old
+		   vs new storage. Also, IMAP4rev2 requires exact flags,
+		   which the notification does not provide */
+		mailbox_suppress_nfc_name_change_notification(ctx->box);
+	}
+
 	event_add_str(ctx->cmd->global_event, "mailbox",
 		      mailbox_get_vname(ctx->box));
 	if (mailbox_open(ctx->box) < 0) {
@@ -313,8 +363,13 @@ select_open(struct imap_select_context *ctx, const char *mailbox, bool readonly)
 	client_update_mailbox_flags(client, status.keywords);
 	client_send_mailbox_flags(client, TRUE);
 
-	bool imap4rev2_enabled = (client_enabled_mailbox_features(client) &
-				  MAILBOX_FEATURE_IMAP4REV2) != 0;
+	if (imap4rev2_enabled &&
+	    (select_send_untagged_list(client, ctx->box, old_vname) < 0)) {
+		client_send_list_error(ctx->cmd,
+				       mailbox_get_namespace(ctx->box)->list);
+		return -1;
+	}
+
 	client_send_line(client,
 		t_strdup_printf("* %u EXISTS", status.messages));
 	if (!imap4rev2_enabled) {
