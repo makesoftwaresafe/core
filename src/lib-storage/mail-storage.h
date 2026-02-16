@@ -662,6 +662,11 @@ mailbox_get_settings(struct mailbox *box) ATTR_PURE;
 const char *mailbox_get_vname(const struct mailbox *box) ATTR_PURE;
 /* Returns the backend name of given mailbox. */
 const char *mailbox_get_name(const struct mailbox *box) ATTR_PURE;
+/* Returns the original vname if it has been NFC normalized */
+bool mailbox_was_vname_changed_by_nfc(struct mailbox *box,
+				      const char **orig_vname_r);
+/* Suppress lib-storage notification */
+void mailbox_suppress_nfc_name_change_notification(struct mailbox *box);
 
 /* Returns TRUE if mailbox is read-only. */
 bool mailbox_is_readonly(struct mailbox *box);

@@ -1520,6 +1520,21 @@ mailbox_vname_normalize_ns_prefix_nfc(struct mailbox_list *list,
 	*vname = str_c(str);
 }
 
+bool mailbox_was_vname_changed_by_nfc(struct mailbox *box,
+				      const char **orig_vname_r)
+{
+	if (!box->mailbox_name_changed_by_nfc)
+		return FALSE;
+	if (orig_vname_r != NULL)
+		*orig_vname_r = box->vname_raw;
+	return TRUE;
+}
+
+void mailbox_suppress_nfc_name_change_notification(struct mailbox *box)
+{
+	box->notifying_nfc_name_change = TRUE;
+}
+
 int mailbox_rename_nfc_forced(struct mailbox_list *list, const char *vname_raw,
 			      const char *vname_nfc, const char **vname_new_r,
 			      const char **error_r)
