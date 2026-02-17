@@ -319,7 +319,7 @@ select_open(struct imap_select_context *ctx, const char *mailbox, bool readonly)
 		t_strdup_printf("* %u EXISTS", status.messages));
 	if (!imap4rev2_enabled) {
 		client_send_line(client,
-				t_strdup_printf("* %u RECENT", status.recent));
+				 t_strdup_printf("* %u RECENT", status.recent));
 	}
 
 	if (!imap4rev2_enabled && status.first_unseen_seq != 0) {
