@@ -20,7 +20,7 @@ EXTRA_DIST = \
 	run-test-valgrind.supp \
 	dovecot.service.in \
 	dovecot.socket \
-	version \
+	version.txt \
 	build-aux/git-abi-version-gen \
 	build-aux/git-version-gen \
 	build-aux/config.rpath \
@@ -32,7 +32,7 @@ nodist_pkginclude_HEADERS = config.h
 
 distuninstallcheck_listfiles = find . -type f \! -name '*.conf' -print
 
-version:
+version.txt:
 	$(AM_V_GEN)env VERSION=$(PACKAGE_VERSION) $(top_srcdir)/build-aux/git-version-gen > $@
 
 aclocal_DATA = m4/dovecot.m4

@@ -49,7 +49,7 @@ auth-token-secret.dat
 /dovecot.service
 /README
 /INSTALL
-/version
+/version.txt
 /.cache
 /.dir-locals.el
 /.ropeproject
