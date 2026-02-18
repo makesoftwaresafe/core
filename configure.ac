@@ -75,6 +75,9 @@ AC_SUBST([DOVECOT_HAVE_MAIL_UTF8], $have_mail_utf8)
 AC_ARG_ENABLE(experimental-imap4rev2,
 AS_HELP_STRING([--enable-experimental-imap4rev2], [Enable experimental support for IMAP4REV2]),
 	AS_IF([test x$enableval = xyes], [
+		AS_IF([test x$have_mail_utf8 != xyes], [
+			AC_MSG_ERROR([--enable-experimental-mail-utf8 is required for --enable-experimental-imap4rev2])
+		])
 		AC_DEFINE([EXPERIMENTAL_IMAP4REV2],, [Build with IMAP4REV2 support])
 		experimental_capabilities="${experimental_capabilities} IMAP4REV2"
 		have_imap4rev2=yes
