@@ -92,6 +92,9 @@ void admin_cmd_send(const char *service, pid_t pid, const char *cmd,
 
 static void client_connected(struct master_service_connection *conn)
 {
+	/* The first listen_fd is a pipe connected directly to the master
+	   process. It's not actually the first configured listener in the
+	   service settings. */
 	bool master = conn->listen_fd == MASTER_LISTEN_FD_FIRST;
 
 	master_service_client_connection_accept(conn);
