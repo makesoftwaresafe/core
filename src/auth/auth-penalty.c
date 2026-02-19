@@ -77,6 +77,8 @@ auth_penalty_anvil_callback(const struct anvil_reply *reply,
 		if (!anvil_client_is_connected(request->client)) {
 			/* we probably didn't have permissions to reconnect
 			   back to anvil. need to restart ourself. */
+			e_warning(request->event,
+				"Anvil not connected - restarting auth process");
 			master_service_stop(master_service);
 		}
 	} else if (sscanf(reply->reply, "%u %lu", &penalty, &last_penalty) != 2) {
