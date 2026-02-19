@@ -392,6 +392,12 @@ anvil_connection_request(struct anvil_connection *conn,
 	time_t stamp;
 	pid_t pid;
 
+	if (conn->conn_type == ANVIL_CONNECTION_TYPE_AUTH_PENALTY &&
+	    !str_begins_with(cmd, "PENALTY-")) {
+		*error_r = "Only PENALTY-* commands allowed";
+		return -1;
+	}
+
 	anvil_global_cmd_counter++;
 	anvil_refresh_proctitle_delayed();
 

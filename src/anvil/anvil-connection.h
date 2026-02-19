@@ -4,6 +4,7 @@
 enum anvil_connection_type {
 	ANVIL_CONNECTION_TYPE_DEFAULT,
 	ANVIL_CONNECTION_TYPE_MASTER,
+	ANVIL_CONNECTION_TYPE_AUTH_PENALTY,
 };
 
 /* Error is set and reply=NULL on internal errors. */

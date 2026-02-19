@@ -99,8 +99,14 @@ static void client_connected(struct master_service_connection *conn)
 
 	if (conn->listen_fd == MASTER_LISTEN_FD_FIRST)
 		type = ANVIL_CONNECTION_TYPE_MASTER;
-	else
-		type = ANVIL_CONNECTION_TYPE_DEFAULT;
+	else {
+		const char *type_str = master_service_connection_get_type(conn);
+
+		if (strcmp(type_str, "penalty") == 0)
+			type = ANVIL_CONNECTION_TYPE_AUTH_PENALTY;
+		else
+			type = ANVIL_CONNECTION_TYPE_DEFAULT;
+	}
 
 	master_service_client_connection_accept(conn);
 	anvil_connection_create(conn->fd, type, conn->fifo);
