@@ -99,6 +99,8 @@ auth_penalty_anvil_callback(const struct anvil_reply *reply,
 			drop_penalty--;
 			penalty--;
 		}
+		secs = penalty == 0 ? 0 : auth_penalty_to_secs(penalty);
+		e_debug(request->event, "Delaying response for %u seconds", secs);
 	}
 
 	request->callback(penalty, request->auth_request);
