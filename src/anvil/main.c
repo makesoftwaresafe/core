@@ -95,10 +95,15 @@ static void client_connected(struct master_service_connection *conn)
 	/* The first listen_fd is a pipe connected directly to the master
 	   process. It's not actually the first configured listener in the
 	   service settings. */
-	bool master = conn->listen_fd == MASTER_LISTEN_FD_FIRST;
+	enum anvil_connection_type type;
+
+	if (conn->listen_fd == MASTER_LISTEN_FD_FIRST)
+		type = ANVIL_CONNECTION_TYPE_MASTER;
+	else
+		type = ANVIL_CONNECTION_TYPE_DEFAULT;
 
 	master_service_client_connection_accept(conn);
-	anvil_connection_create(conn->fd, master, conn->fifo);
+	anvil_connection_create(conn->fd, type, conn->fifo);
 }
 
 static void ATTR_NULL(1)
