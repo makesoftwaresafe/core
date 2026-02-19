@@ -659,9 +659,15 @@ static void client_default_destroy(struct client *client, const char *reason)
 	   before it starts, and refresh proctitle so it's clear that it's
 	   doing autoexpunging. We've also sent DISCONNECT to anvil already,
 	   because this is background work and shouldn't really be counted
-	   as an active POP3 session for the user. */
+	   as an active POP3 session for the user.
+
+	   Don't perform autoexpunging at shutdown to avoid load spikes. See
+	   imap code for more detailed reasoning. Although this is less of an
+	   issue with POP3 since the sessions are so short-lived. */
 	pop3_refresh_proctitle();
-	mail_user_autoexpunge(client->user);
+	if (!master_service_is_killed(master_service) &&
+	    !master_service_is_master_stopped(master_service))
+		mail_user_autoexpunge(client->user);
 	mail_user_deinit(&client->user);
 	settings_free(client->set);
 	settings_free(client->mail_set);

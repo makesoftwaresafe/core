@@ -547,10 +547,19 @@ static void client_default_destroy(struct client *client, const char *reason)
 
 	   Don't autoexpunge if the client is hibernated - it shouldn't be any
 	   different from the non-hibernating IDLE case. For frequent
-	   hibernations it could also be doing unnecessarily much work. */
+	   hibernations it could also be doing unnecessarily much work.
+
+	   Don't perform autoexpunging if whole Dovecot is shutting down. This
+	   could lead to a load spike and unnecessarily slowing down the
+	   shutdown process. Also don't do this when processes are being
+	   killed, for similar reasoning. */
 	imap_refresh_proctitle();
 	if (!client->hibernated) {
-		client->logout_stats.autoexpunged_count = mail_user_autoexpunge(client->user);
+		if (!master_service_is_killed(master_service) &&
+		    !master_service_is_master_stopped(master_service)) {
+			client->logout_stats.autoexpunged_count =
+				mail_user_autoexpunge(client->user);
+		}
 		client_log_disconnect(client, reason);
 	}
 	mail_user_deinit(&client->user);
