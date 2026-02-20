@@ -1665,11 +1665,14 @@ static bool imap_client_enable_imap4rev2(struct client *client)
 		return FALSE;
 	}
 
-	if (client->mailbox != NULL)
+	if (client->mailbox != NULL) {
 		mailbox_enable(client->mailbox, MAILBOX_FEATURE_IMAP4REV2);
+		mailbox_enable(client->mailbox, MAILBOX_FEATURE_UTF8ACCEPT);
+	}
 
-	/* If IMAP4rev2 is enabled always enable QRESYNC */
+	/* If IMAP4rev2 is enabled also enable QRESYNC and UTF8=ACCEPT */
 	client_enable(client, imap_feature_qresync);
+	client_enable(client, imap_feature_utf8accept);
 	return TRUE;
 }
 #endif
