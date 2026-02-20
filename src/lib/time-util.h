@@ -35,9 +35,9 @@ timeval_from_usecs(struct timeval *tv_r, unsigned long usecs)
 }
 
 static inline void
-timeval_add_usecs(struct timeval *tv, suseconds_t usecs)
+timeval_add_usecs(struct timeval *tv, unsigned long long usecs)
 {
-	i_assert(usecs >= 0);
+	i_assert(usecs <= LLONG_MAX);
 	tv->tv_sec += (time_t)(usecs / 1000000);
 	tv->tv_usec += (usecs % 1000000);
 	if (tv->tv_usec >= 1000000) {
@@ -47,9 +47,9 @@ timeval_add_usecs(struct timeval *tv, suseconds_t usecs)
 }
 
 static inline void
-timeval_sub_usecs(struct timeval *tv, suseconds_t usecs)
+timeval_sub_usecs(struct timeval *tv, unsigned long long usecs)
 {
-	i_assert(usecs >= 0);
+	i_assert(usecs <= LLONG_MAX);
 	tv->tv_sec -= (time_t)(usecs / 1000000);
 	tv->tv_usec -= (usecs % 1000000);
 	if (tv->tv_usec < 0) {
