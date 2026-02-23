@@ -733,6 +733,49 @@ test_compression_handler_errors(const struct compression_handler *handler,
 	test_end();
 }
 
+static void
+test_compression_handler_partial_header(const struct compression_handler *handler,
+					bool autodetect)
+{
+	test_begin(t_strdup_printf("compression handler %s (partial header read, autodetect=%s)",
+				   handler->name, autodetect ? "yes" : "no"));
+
+	buffer_t *compressed = t_buffer_create(32);
+	struct ostream *os = test_ostream_create(compressed);
+	struct ostream *os2 = handler->create_ostream_auto(os, set.event);
+	o_stream_unref(&os);
+	o_stream_nsend_str(os2, "hello, world");
+	int ret = o_stream_finish(os2);
+	test_assert(ret > 0);
+	o_stream_unref(&os2);
+
+	struct istream *is = test_istream_create_data(compressed->data, compressed->used);
+	struct istream *is2;
+	if (autodetect)
+		is2 = i_stream_create_decompress(is, 0);
+	else
+		is2 = handler->create_istream(is);
+	buffer_t *decompressed = t_buffer_create(32);
+	const unsigned char *data;
+	size_t pos, len;
+	for (pos = 0; pos <= compressed->used; pos++) {
+		test_istream_set_size(is, pos);
+		while (i_stream_read_more(is2, &data, &len) > 0) {
+			buffer_append(decompressed, data, len);
+			i_stream_skip(is2, len);
+		}
+	}
+	i_stream_unref(&is);
+
+	test_assert(is2->eof);
+	test_assert(is2->stream_errno == 0);
+	test_assert_memcmp(decompressed->data, decompressed->used,
+			   "hello, world", strlen("hello, world"));
+	i_stream_unref(&is2);
+
+	test_end();
+}
+
 static void test_compression_int(bool autodetect)
 {
 	unsigned int i;
@@ -754,6 +797,7 @@ static void test_compression_int(bool autodetect)
 			test_compression_handler_random_io(&compression_handlers[i], autodetect);
 			test_compression_handler_large_random_io(&compression_handlers[i], autodetect);
 			test_compression_handler_errors(&compression_handlers[i], autodetect);
+			test_compression_handler_partial_header(&compression_handlers[i], autodetect);
 		} T_END;
 	}
 }
