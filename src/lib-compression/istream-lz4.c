@@ -205,7 +205,8 @@ static ssize_t i_stream_lz4_read(struct istream_private *stream)
 		lz4_read_error(zstream, "corrupted lz4 chunk");
 		stream->istream.stream_errno = EINVAL;
 		return -1;
-	}
+	} else if (ret == 0)
+		return i_stream_lz4_read(stream);
 	i_assert(ret > 0);
 	stream->pos += ret;
 	i_assert(stream->pos <= stream->buffer_size);

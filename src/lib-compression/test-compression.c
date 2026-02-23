@@ -1014,6 +1014,11 @@ static const unsigned char lz4_chunk_crash_02[] = {
 	 0x32, 0x01, 0xff, 0xff, 0x00, 0x30
 };
 
+static const unsigned char lz4_chunk_eof_03[] = {
+	0x44, 0x6f, 0x76, 0x65, 0x63, 0x6f, 0x74, 0x2d, 0x4c, 0x5a, 0x34, 0x0d,
+	0x2a, 0x9b, 0xc5, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00,
+};
+
 static void test_lz4_chunk_size(void)
 {
 	const struct compression_handler *lz4;
@@ -1047,6 +1052,18 @@ static void test_lz4_chunk_size(void)
 	test_assert(input->stream_errno != 0);
 	error = i_stream_get_error(input);
 	test_assert(strstr(error, "invalid lz4 max chunk size") != NULL);
+
+	i_stream_unref(&input);
+
+	file_input = test_istream_create_data(lz4_chunk_eof_03,
+					      sizeof(lz4_chunk_eof_03));
+	input = lz4->create_istream(file_input);
+	i_stream_unref(&file_input);
+	i_stream_read(input);
+
+	/* no error, but no content either */
+	test_assert(input->eof);
+	test_assert(input->stream_errno == 0);
 
 	i_stream_unref(&input);
 
