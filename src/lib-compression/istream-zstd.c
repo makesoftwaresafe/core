@@ -182,8 +182,13 @@ static ssize_t i_stream_zstd_read(struct istream_private *stream)
 			return -1;
 		}
 		/* ZSTD magic number is 4 bytes, but it's only defined after v0.8 */
-		if (!zstream->hdr_read && zstream->input.size > 4)
-			zstream->hdr_read = TRUE;
+		if (!zstream->hdr_read) {
+			i_assert(zstream->istream.parent->v_offset >=
+				 zstream->istream.parent_start_offset);
+			if ((zstream->istream.parent->v_offset -
+			     zstream->istream.parent_start_offset) > 4)
+				zstream->hdr_read = TRUE;
+		}
 		zstream->remain = zret > 0;
 		buffer_set_used_size(zstream->data_buffer, zstream->output.pos);
 	}
