@@ -1002,6 +1002,57 @@ static void test_lz4_small_header(void)
 	test_end();
 }
 
+static const unsigned char lz4_chunk_crash_01[] = {
+	 0x44, 0x6f, 0x76, 0x65, 0x63, 0x6f, 0x74, 0x2d, 0x4c, 0x5a, 0x34, 0x0d,
+	 0x2a, 0x9b, 0xc5, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0x7a,
+	 0x32, 0x01, 0xff, 0xff, 0x00, 0x30
+};
+
+static const unsigned char lz4_chunk_crash_02[] = {
+	 0x44, 0x6f, 0x76, 0x65, 0x63, 0x6f, 0x74, 0x2d, 0x4c, 0x5a, 0x34, 0x0d,
+	 0x2a, 0x9b, 0xc5, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x07, 0x7a,
+	 0x32, 0x01, 0xff, 0xff, 0x00, 0x30
+};
+
+static void test_lz4_chunk_size(void)
+{
+	const struct compression_handler *lz4;
+	struct istream *file_input, *input;
+
+	if (compression_lookup_handler("lz4", &lz4) <= 0)
+		return; /* not compiled in or unknown */
+
+	test_begin("lz4 chunk size");
+
+	file_input = test_istream_create_data(lz4_chunk_crash_01,
+					      sizeof(lz4_chunk_crash_01));
+	input = lz4->create_istream(file_input);
+	i_stream_unref(&file_input);
+	i_stream_read(input);
+
+	test_assert(input->eof);
+	test_assert(input->stream_errno != 0);
+	const char *error = i_stream_get_error(input);
+	test_assert(strstr(error, "invalid lz4 max chunk size") != NULL);
+
+	i_stream_unref(&input);
+
+	file_input = test_istream_create_data(lz4_chunk_crash_02,
+					      sizeof(lz4_chunk_crash_02));
+	input = lz4->create_istream(file_input);
+	i_stream_unref(&file_input);
+	i_stream_read(input);
+
+	test_assert(input->eof);
+	test_assert(input->stream_errno != 0);
+	error = i_stream_get_error(input);
+	test_assert(strstr(error, "invalid lz4 max chunk size") != NULL);
+
+	i_stream_unref(&input);
+
+	test_end();
+}
+
 static void test_uncompress_file(const char *path)
 {
 	const struct compression_handler *handler;
@@ -1125,6 +1176,7 @@ int main(int argc, char *argv[])
 		test_gz_header,
 		test_gz_large_header,
 		test_lz4_small_header,
+		test_lz4_chunk_size,
 		test_compression_ext,
 		test_compression_deinit,
 		NULL

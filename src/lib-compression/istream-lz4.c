@@ -80,9 +80,10 @@ static int i_stream_lz4_read_header(struct lz4_istream *zstream)
 	zstream->max_uncompressed_chunk_size =
 		be32_to_cpu_unaligned(hdr->max_uncompressed_chunk_size);
 	buffer_set_used_size(zstream->chunk_buf, 0);
-	if (zstream->max_uncompressed_chunk_size > ISTREAM_LZ4_CHUNK_SIZE) {
+	if (zstream->max_uncompressed_chunk_size  == 0 ||
+	    zstream->max_uncompressed_chunk_size > ISTREAM_LZ4_CHUNK_SIZE) {
 		lz4_read_error(zstream, t_strdup_printf(
-			"lz4 max chunk size too large (%u > %u)",
+			"invalid lz4 max chunk size (%u, max %u)",
 			zstream->max_uncompressed_chunk_size,
 			ISTREAM_LZ4_CHUNK_SIZE));
 		zstream->istream.istream.stream_errno = EINVAL;
