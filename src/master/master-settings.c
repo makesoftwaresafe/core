@@ -605,7 +605,6 @@ master_settings_ext_check(struct event *event, void *_set,
 	struct service_settings *const *services;
 	const char *const *strings, *proto;
 	ARRAY_TYPE(const_string) all_listeners;
-	struct passwd pw;
 	unsigned int i, j, count, client_limit, process_limit;
 	unsigned int max_auth_client_processes, max_anvil_client_processes;
 	string_t *max_auth_client_processes_reason = t_str_new(64);
@@ -615,6 +614,7 @@ master_settings_ext_check(struct event *event, void *_set,
 #ifdef CONFIG_BINARY
 	const struct service_settings *default_service;
 #else
+	struct passwd pw;
 	rlim_t fd_limit;
 	const char *max_client_limit_source = "BUG";
 	unsigned int max_client_limit = 0;
@@ -644,6 +644,7 @@ master_settings_ext_check(struct event *event, void *_set,
 		return FALSE;
 	}
 
+#ifndef CONFIG_BINARY
 	if (i_getpwnam(set->default_login_user, &pw) == 0) {
 		*error_r = t_strdup_printf("default_login_user doesn't exist: %s",
 					   set->default_login_user);
@@ -654,6 +655,7 @@ master_settings_ext_check(struct event *event, void *_set,
 					   set->default_internal_user);
 		return FALSE;
 	}
+#endif
 
 	/* check that we have at least one service. the actual service
 	   structure validity is checked later while creating them. */
