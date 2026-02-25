@@ -170,6 +170,7 @@ i_stream_zlib_read_trailer_more(struct zlib_istream *zstream,
 	ret = i_stream_read_bytes(stream->parent, data_r, &size,
 				  GZ_TRAILER_SIZE);
 	if (size == zstream->prev_size) {
+		i_assert(ret <= 0);
 		stream->istream.stream_errno = stream->parent->stream_errno;
 		if (ret == -1 && stream->istream.stream_errno == 0) {
 			zlib_read_error(zstream, "missing gz trailer");
