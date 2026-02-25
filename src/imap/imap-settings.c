@@ -256,6 +256,11 @@ imap_settings_verify(void *_set, pool_t pool ATTR_UNUSED, const char **error_r)
 	}
 #endif
 
+	if (set->imap4rev2_enable && !set->mail_utf8_extensions) {
+		*error_r = "imap4rev2_enable=yes requires mail_utf8_extensions=yes";
+		return FALSE;
+	}
+
 	if (imap_settings_parse_workarounds(set, error_r) < 0)
 		return FALSE;
 
