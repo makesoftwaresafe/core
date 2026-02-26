@@ -214,6 +214,7 @@ static void block_canary_check(struct stack_block *block)
 static void free_blocks(struct stack_block *block)
 {
 	struct stack_block *next;
+	int old_errno = errno;
 
 	/* free all the blocks, except if any of them is bigger than
 	   unused_block, replace it */
@@ -237,6 +238,7 @@ static void free_blocks(struct stack_block *block)
 
 		block = next;
 	}
+	errno = old_errno;
 }
 
 #ifdef DEBUG
@@ -367,6 +369,7 @@ static struct stack_block *mem_block_alloc(size_t min_size)
 {
 	struct stack_block *block;
 	size_t prev_size, alloc_size;
+	int old_errno = errno;
 
 	prev_size = current_block == NULL ? 0 : current_block->size;
 	/* Use INITIAL_STACK_SIZE without growing it to nearest power. */
@@ -386,6 +389,7 @@ static struct stack_block *mem_block_alloc(size_t min_size)
 		i_panic("data stack: Out of memory when allocating %zu bytes",
 			alloc_size + SIZEOF_MEMBLOCK);
 	}
+	errno = old_errno;
 	block->size = alloc_size;
 	block->canary = BLOCK_CANARY;
 	mem_block_reset(block);
@@ -457,9 +461,7 @@ static void *t_malloc_real(size_t size, bool permanent)
 	void *ret;
 	size_t alloc_size;
 	bool warn = FALSE;
-#ifdef DEBUG
 	int old_errno = errno;
-#endif
 
 	if (unlikely(size == 0 || size > SSIZE_T_MAX))
 		i_panic("Trying to allocate %zu bytes", size);
@@ -519,17 +521,9 @@ static void *t_malloc_real(size_t size, bool permanent)
 		current_block->left -= alloc_size;
 
 	if (warn) T_BEGIN {
-		/* sending event can cause errno changes. */
-#ifdef DEBUG
-		i_assert(errno == old_errno);
-#else
-		int old_errno = errno;
-#endif
 		/* warn after allocation, so if e_debug() wants to
 		   allocate more memory we don't go to infinite loop */
 		data_stack_send_grow_event(alloc_size);
-		/* reset errno back to what it was */
-		errno = old_errno;
 	} T_END;
 #ifdef DEBUG
 	memcpy(ret, &size, sizeof(size));
@@ -538,10 +532,8 @@ static void *t_malloc_real(size_t size, bool permanent)
 	   had used t_buffer_get(). */
 	memset(PTR_OFFSET(ret, size), CLEAR_CHR,
 	       MEM_ALIGN(size + SENTRY_COUNT) - size);
-
-	/* we rely on errno not changing. it shouldn't. */
-	i_assert(errno == old_errno);
 #endif
+	errno = old_errno;
 	return ret;
 }
 
@@ -739,8 +731,10 @@ size_t data_stack_get_used_size(void)
 
 void data_stack_free_unused(void)
 {
+	int old_errno = errno;
 	free(unused_block);
 	unused_block = NULL;
+	errno = old_errno;
 }
 
 void data_stack_init(void)
