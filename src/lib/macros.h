@@ -218,17 +218,13 @@
 #endif
 
 /* Provide macros for error handling. */
-#ifdef DISABLE_ASSERTS
-#  define i_assert(expr)
-#else
-#  define i_assert(expr)			STMT_START{			\
+#define i_assert(expr)			STMT_START{			\
      if (unlikely(!(expr)))						\
        i_panic("file %s: line %d (%s): assertion failed: (%s)",		\
 		__FILE__,						\
 		__LINE__,						\
 		__func__,					\
 		#expr);			}STMT_END
-#endif
 
 /* Convenience macro to test the versions of dovecot. */
 #define DOVECOT_PREREQ(maj, min, micro) \

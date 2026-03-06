@@ -45,12 +45,6 @@ AS_HELP_STRING([--enable-static-checker], [Enable code to be used when building 
 		AC_DEFINE(STATIC_CHECKER,, [Building with static code analyzer])
 	fi)
 
-AC_ARG_ENABLE(asserts,
-AS_HELP_STRING([--enable-asserts], [Enable asserts (default)]),
-	if test x$enableval = xno; then
-		AC_DEFINE(DISABLE_ASSERTS,, [Disable asserts])
-	fi)
-
 AC_ARG_ENABLE([pro-build],
   [AS_HELP_STRING([--enable-pro-build], [Enable pro build related defines])],
   [is_pro_build=yes],
