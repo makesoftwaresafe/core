@@ -27,6 +27,23 @@ passdb_cache_log_hit(struct auth_request *request, const char *value)
 }
 
 static bool
+passdb_cache_use_password_mismatch(enum passdb_result result,
+				   struct auth_cache_node *node,
+				   bool neg_expired)
+{
+	if (result == PASSDB_RESULT_PASSWORD_MISMATCH &&
+	    (node->last_success || neg_expired)) {
+		/* a) the last authentication was successful. assume
+		   that the password was changed and cache is expired.
+		   b) negative TTL reached, use it for password
+		   mismatches too. */
+		node->last_success = FALSE;
+		return FALSE;
+	}
+	return TRUE;
+}
+
+static bool
 passdb_cache_lookup(struct auth_request *request, const char *key,
 		    bool use_expired, struct auth_cache_node **node_r,
 		    const char **value_r, bool *neg_expired_r)
@@ -129,15 +146,8 @@ bool passdb_cache_verify_plain(struct auth_request *request, const char *key,
 			request, password, cached_pw, scheme,
 			!(node->last_success || neg_expired));
 
-		if (ret == PASSDB_RESULT_PASSWORD_MISMATCH &&
-		    (node->last_success || neg_expired)) {
-			/* a) the last authentication was successful. assume
-			   that the password was changed and cache is expired.
-			   b) negative TTL reached, use it for password
-			   mismatches too. */
-			node->last_success = FALSE;
+		if (!passdb_cache_use_password_mismatch(ret, node, neg_expired))
 			return FALSE;
-		}
 	}
 	node->last_success = ret == PASSDB_RESULT_OK;
 
