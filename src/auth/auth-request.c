@@ -1095,7 +1095,7 @@ auth_request_verify_plain_callback_finish(enum passdb_result result,
 	}
 }
 
-void auth_request_verify_plain_callback(enum passdb_result result,
+void auth_request_verify_plain_passdb_callback(enum passdb_result result,
 					struct auth_request *request)
 {
 	struct auth_passdb *passdb = request->passdb;
@@ -1292,13 +1292,13 @@ void auth_request_default_verify_plain_continue(
 	if (passdb->passdb->iface.verify_plain == NULL) {
 		/* we're deinitializing and just want to get rid of this
 		   request */
-		auth_request_verify_plain_callback(
+		auth_request_verify_plain_passdb_callback(
 			PASSDB_RESULT_INTERNAL_FAILURE, request);
 	} else if (passdb->passdb->blocking) {
 		passdb_blocking_verify_plain(request);
 	} else {
 		passdb->passdb->iface.verify_plain(
-			request, password, auth_request_verify_plain_callback);
+			request, password, auth_request_verify_plain_passdb_callback);
 	}
 }
 
