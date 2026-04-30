@@ -1239,6 +1239,31 @@ void auth_request_verify_plain(struct auth_request *request,
 	}
 }
 
+static void
+auth_request_verify_plain_passdb(struct auth_request *request)
+{
+	struct auth_passdb *passdb = request->passdb;
+
+	auth_request_set_state(request, AUTH_REQUEST_STATE_PASSDB);
+	/* In case this request had already done a credentials lookup (is it
+	   even possible?), make sure wanted_credentials_scheme is cleared
+	   so passdbs don't think we're doing a credentials lookup. */
+	request->wanted_credentials_scheme = NULL;
+
+	if (passdb->passdb->iface.verify_plain == NULL) {
+		/* we're deinitializing and just want to get rid of this
+		   request */
+		auth_request_verify_plain_passdb_callback(
+			PASSDB_RESULT_INTERNAL_FAILURE, request);
+	} else if (passdb->passdb->blocking) {
+		passdb_blocking_verify_plain(request);
+	} else {
+		passdb->passdb->iface.verify_plain(
+			request, request->mech_password,
+			auth_request_verify_plain_passdb_callback);
+	}
+}
+
 void auth_request_default_verify_plain_continue(
 	struct auth_request *request, verify_plain_callback_t *callback)
 {
@@ -1283,23 +1308,7 @@ void auth_request_default_verify_plain_continue(
 		return;
 	}
 
-	auth_request_set_state(request, AUTH_REQUEST_STATE_PASSDB);
-	/* In case this request had already done a credentials lookup (is it
-	   even possible?), make sure wanted_credentials_scheme is cleared
-	   so passdbs don't think we're doing a credentials lookup. */
-	request->wanted_credentials_scheme = NULL;
-
-	if (passdb->passdb->iface.verify_plain == NULL) {
-		/* we're deinitializing and just want to get rid of this
-		   request */
-		auth_request_verify_plain_passdb_callback(
-			PASSDB_RESULT_INTERNAL_FAILURE, request);
-	} else if (passdb->passdb->blocking) {
-		passdb_blocking_verify_plain(request);
-	} else {
-		passdb->passdb->iface.verify_plain(
-			request, password, auth_request_verify_plain_passdb_callback);
-	}
+	auth_request_verify_plain_passdb(request);
 }
 
 static void
