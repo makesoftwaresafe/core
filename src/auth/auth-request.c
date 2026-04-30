@@ -1095,6 +1095,12 @@ auth_request_verify_plain_callback_finish(enum passdb_result result,
 	}
 }
 
+static void
+auth_request_verify_plain_internal_failure(struct auth_request *request)
+{
+	auth_request_verify_plain_callback_finish(PASSDB_RESULT_INTERNAL_FAILURE, request);
+}
+
 void auth_request_verify_plain_passdb_callback(enum passdb_result result,
 					struct auth_request *request)
 {
@@ -1108,24 +1114,17 @@ void auth_request_verify_plain_passdb_callback(enum passdb_result result,
 	    auth_fields_exists(request->fields.extra_fields, "noauthenticate"))
 		result = PASSDB_RESULT_NEXT;
 
-	if (result != PASSDB_RESULT_INTERNAL_FAILURE)
+	if (result != PASSDB_RESULT_INTERNAL_FAILURE) {
 		auth_request_save_cache(request, result);
-	else {
-		/* lookup failed. if we're looking here only because the
-		   request was expired in cache, fallback to using cached
-		   expired record. */
-		const char *cache_key = passdb->cache_key;
-
-		if (passdb_cache_verify_plain(request, cache_key,
-					      request->mech_password,
-					      &result, TRUE)) {
-			e_info(authdb_event(request),
-			       "Falling back to expired data from cache");
-			return;
-		}
+		auth_request_verify_plain_callback_finish(result, request);
+		return;
 	}
 
-	auth_request_verify_plain_callback_finish(result, request);
+	/* lookup failed. if we're looking here only because the request was
+	   expired in cache, fallback to using cached expired record. */
+	passdb_cache_verify_plain(request, passdb->cache_key,
+				  request->mech_password, TRUE,
+				  auth_request_verify_plain_internal_failure);
 }
 
 static bool password_has_illegal_chars(const char *password)
@@ -1268,7 +1267,6 @@ void auth_request_default_verify_plain_continue(
 	struct auth_request *request, verify_plain_callback_t *callback)
 {
 	struct auth_passdb *passdb;
-	enum passdb_result result;
 	const char *cache_key;
 	const char *password = request->mech_password;
 
@@ -1303,12 +1301,8 @@ void auth_request_default_verify_plain_continue(
 	request->private_callback.verify_plain = callback;
 
 	cache_key = passdb_cache == NULL ? NULL : passdb->cache_key;
-	if (passdb_cache_verify_plain(request, cache_key, password,
-				      &result, FALSE)) {
-		return;
-	}
-
-	auth_request_verify_plain_passdb(request);
+	passdb_cache_verify_plain(request, cache_key, password, FALSE,
+				  auth_request_verify_plain_passdb);
 }
 
 static void

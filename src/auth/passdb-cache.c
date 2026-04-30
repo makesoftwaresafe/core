@@ -69,12 +69,20 @@ passdb_cache_lookup(struct auth_request *request, const char *key,
 	return TRUE;
 }
 
+struct passdb_cache_verify_plain_ctx {
+	struct auth_request *request;
+	const char *key;
+	bool use_expired;
+	verify_plain_passdb_callback_t *fallback;
+};
+
 static bool
 passdb_cache_verify_plain_callback(struct auth_worker_connection *conn ATTR_UNUSED,
 				   const char *const *args,
 				   void *context)
 {
-	struct auth_request *request = context;
+	struct passdb_cache_verify_plain_ctx *ctx = context;
+	struct auth_request *request = ctx->request;
 	enum passdb_result result;
 
 	result = passdb_blocking_auth_worker_reply_parse(request, args);
@@ -85,28 +93,36 @@ passdb_cache_verify_plain_callback(struct auth_worker_connection *conn ATTR_UNUS
 	return TRUE;
 }
 
-bool passdb_cache_verify_plain(struct auth_request *request, const char *key,
-			       const char *password,
-			       enum passdb_result *result_r, bool use_expired)
+void passdb_cache_verify_plain(struct auth_request *request, const char *key,
+			       const char *password, bool use_expired,
+			       verify_plain_passdb_callback_t *fallback)
 {
 	const char *value, *cached_pw, *scheme, *const *list;
+	struct passdb_cache_verify_plain_ctx *ctx;
 	struct auth_cache_node *node;
 	enum passdb_result ret;
 	bool neg_expired;
 
-	if (passdb_cache == NULL || key == NULL)
-		return FALSE;
+	if (passdb_cache == NULL || key == NULL) {
+		fallback(request);
+		return;
+	}
 
 	if (!passdb_cache_lookup(request, key, use_expired,
-				 &node, &value, &neg_expired))
-		return FALSE;
+				 &node, &value, &neg_expired)) {
+		fallback(request);
+		return;
+	}
+
+	if (use_expired)
+		e_info(authdb_event(request), "Falling back to expired data from cache");
 
 	if (*value == '\0') {
 		/* negative cache entry */
 		auth_request_db_log_unknown_user(request);
-		*result_r = PASSDB_RESULT_USER_UNKNOWN;
-		auth_request_verify_plain_callback_finish(*result_r, request);
-		return TRUE;
+		auth_request_verify_plain_callback_finish(
+			PASSDB_RESULT_USER_UNKNOWN, request);
+		return;
 	}
 
 	list = t_strsplit_tabescaped(value);
@@ -135,9 +151,16 @@ bool passdb_cache_verify_plain(struct auth_request *request, const char *key,
 		   If verification fails, roll back fields. */
 		auth_request_set_fields(request, list + 1, NULL);
 		auth_fields_snapshot(request->fields.extra_fields);
+
+		ctx = p_new(request->pool,
+			    struct passdb_cache_verify_plain_ctx, 1);
+		ctx->request = request;
+		ctx->key = p_strdup(request->pool, key);
+		ctx->use_expired = use_expired;
+		ctx->fallback = fallback;
 		auth_worker_call(request->pool, request->fields.user, str_c(str),
-				 passdb_cache_verify_plain_callback, request);
-		return TRUE;
+				 passdb_cache_verify_plain_callback, ctx);
+		return;
 	} else {
 		scheme = password_get_scheme(&cached_pw);
 		i_assert(scheme != NULL);
@@ -146,8 +169,10 @@ bool passdb_cache_verify_plain(struct auth_request *request, const char *key,
 			request, password, cached_pw, scheme,
 			!(node->last_success || neg_expired));
 
-		if (!passdb_cache_use_password_mismatch(ret, node, neg_expired))
-			return FALSE;
+		if (!passdb_cache_use_password_mismatch(ret, node, neg_expired)) {
+			fallback(request);
+			return;
+		}
 	}
 	node->last_success = ret == PASSDB_RESULT_OK;
 
@@ -155,10 +180,7 @@ bool passdb_cache_verify_plain(struct auth_request *request, const char *key,
 	   cached data */
 	auth_request_set_fields(request, list + 1, NULL);
 
-	*result_r = ret;
-
-	auth_request_verify_plain_callback_finish(*result_r, request);
-	return TRUE;
+	auth_request_verify_plain_callback_finish(ret, request);
 }
 
 bool passdb_cache_lookup_credentials(struct auth_request *request,
