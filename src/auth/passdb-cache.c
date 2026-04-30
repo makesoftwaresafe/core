@@ -88,6 +88,34 @@ passdb_cache_verify_plain_callback(struct auth_worker_connection *conn ATTR_UNUS
 	result = passdb_blocking_auth_worker_reply_parse(request, args);
 	if (result != PASSDB_RESULT_OK)
 		auth_fields_rollback(request->fields.extra_fields);
+
+	if (result == PASSDB_RESULT_PASSWORD_MISMATCH) {
+		/* The cache may have evicted our entry while the worker was
+		   processing the request, so re-lookup the node. If it's
+		   still present, apply the stale-cache rule. If it's gone,
+		   fall back anyway: otherwise a password change could be
+		   reported as a mismatch instead of being retried, and the
+		   cached evidence we would have used is gone. The extra
+		   lookup is harmless because the cache entry no longer
+		   exists. */
+		enum auth_request_cache_result orig_cache_result =
+			request->passdb_cache_result;
+		struct auth_cache_node *node;
+		const char *value;
+		bool neg_expired;
+		bool found = passdb_cache_lookup(request, ctx->key,
+						 ctx->use_expired, &node,
+						 &value, &neg_expired);
+		bool do_fallback = !found ||
+			!passdb_cache_use_password_mismatch(result, node,
+							    neg_expired);
+		request->passdb_cache_result = orig_cache_result;
+		if (do_fallback) {
+			ctx->fallback(request);
+			auth_request_unref(&request);
+			return TRUE;
+		}
+	}
 	auth_request_verify_plain_callback_finish(result, request);
 	auth_request_unref(&request);
 	return TRUE;
